@@ -1,0 +1,26 @@
+{'model': 'fairgnnwod', 'task': 'train', 'dataset': 'dblp', 'dgl_data': False, 'device': 'cuda', 'seed': 0, 'epochs': 200, 'print_every': 1, 'save_every': -1, 'lr': 0.0001, 'weight_decay': 0.0005, 'hidden': 64, 'patience': 2, 'warmup': 5, 'dropout': 0.0, 'kd_temp': 4, 'kd_lambda': 0.5, 'hidden_vgae': 256, 'latent_size': 32, 'hgr_steps_per_epoch': 10, 'lambda_hgr': 0.5, 'hidden_hgr': 512, 'channels': 8, 'lambda_dd': 0.1, 'alpha': 1.0, 'beta': 1.0, 'gamma': 5.0, 'adv_steps_per_epoch': 2, 'mask_warmup': 0.4}
+--- Starting train FAIRGNNWOD on dblp ---
+Loading pre-trained VGAE from /workspace/fairgnn-wod-reproduction/models/stage1/vgae_dblp_best.pt...
+Starting Stage 2 (FairGNN-WOD) training on dblp...
+Epoch 1 | Train Loss: 0.6801 | Adv Loss: 0.5169 | LP: 0.6801 | LD: 0.4668 | LI: -0.2988 | LF: 0.0168 | Val F1: 0.4294 | Val Acc: 0.7565 | Time: 0.79s
+Epoch 2 | Train Loss: 0.5424 | Adv Loss: 0.4255 | LP: 0.5424 | LD: 0.4074 | LI: -0.2973 | LF: 0.0792 | Val F1: 0.8797 | Val Acc: 0.9241 | Time: 0.37s
+Epoch 3 | Train Loss: 0.7027 | Adv Loss: 0.3848 | LP: 0.4443 | LD: 0.3732 | LI: -0.2945 | LF: 0.1033 | Val F1: 0.9170 | Val Acc: 0.9450 | Time: 0.37s
+Epoch 4 | Train Loss: 1.1229 | Adv Loss: 0.3567 | LP: 0.4031 | LD: 0.3478 | LI: -0.2728 | LF: 0.1390 | Val F1: 0.9206 | Val Acc: 0.9476 | Time: 0.41s
+Epoch 5 | Train Loss: 0.6875 | Adv Loss: 0.3340 | LP: 0.3767 | LD: 0.3265 | LI: -0.2651 | LF: 0.0540 | Val F1: 0.9261 | Val Acc: 0.9503 | Time: 0.35s
+Epoch 6 | Train Loss: 0.9124 | Adv Loss: 0.3144 | LP: 0.3638 | LD: 0.3077 | LI: -0.2542 | LF: 0.0990 | Val F1: 0.9195 | Val Acc: 0.9450 | Time: 0.37s
+Epoch 7 | Train Loss: 0.7695 | Adv Loss: 0.2963 | LP: 0.3510 | LD: 0.2900 | LI: -0.2460 | LF: 0.0749 | Val F1: 0.9375 | Val Acc: 0.9581 | Time: 0.38s
+Epoch 8 | Train Loss: 0.5264 | Adv Loss: 0.2792 | LP: 0.3417 | LD: 0.2733 | LI: -0.2330 | LF: 0.0289 | Val F1: 0.9328 | Val Acc: 0.9555 | Time: 0.37s
+Epoch 9 | Train Loss: 0.4401 | Adv Loss: 0.2631 | LP: 0.3374 | LD: 0.2575 | LI: -0.2206 | LF: 0.0132 | Val F1: 0.9291 | Val Acc: 0.9529 | Time: 0.38s
+Early stopping at epoch 9
+FairGNN-WOD Training Finished. Total Time: 3.99s
+
+Restoring best model for final evaluation...
+--------------------------------------------------
+Test Set Results (dblp):
+     AUC: 0.9783
+Accuracy: 0.9347
+F1 Score: 0.8960
+Fairness Metrics:
+  sp: [0.0079, -0.0079]
+  eo: [0.0184, -0.0513]
+--------------------------------------------------

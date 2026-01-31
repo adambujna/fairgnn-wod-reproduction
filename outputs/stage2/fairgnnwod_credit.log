@@ -1,0 +1,48 @@
+{'model': 'fairgnnwod', 'task': 'train', 'dataset': 'credit', 'dgl_data': False, 'device': 'cuda', 'seed': 0, 'epochs': 200, 'print_every': 1, 'save_every': -1, 'lr': 0.001, 'weight_decay': 0.0005, 'hidden': 64, 'patience': 5, 'warmup': 20, 'dropout': 0.0, 'kd_temp': 4, 'kd_lambda': 0.5, 'hidden_vgae': 256, 'latent_size': 32, 'hgr_steps_per_epoch': 10, 'lambda_hgr': 0.5, 'hidden_hgr': 512, 'channels': 8, 'lambda_dd': 0.1, 'alpha': 1.0, 'beta': 1.0, 'gamma': 5.0, 'adv_steps_per_epoch': 2, 'mask_warmup': 0.2}
+--- Starting train FAIRGNNWOD on credit ---
+Loading pre-trained VGAE from /workspace/fairgnn-wod-reproduction/models/stage1/vgae_credit_best.pt...
+Starting Stage 2 (FairGNN-WOD) training on credit...
+Epoch 1 | Train Loss: 0.7377 | Adv Loss: 0.4835 | LP: 0.7377 | LD: 0.3460 | LI: -0.1962 | LF: 0.0210 | Val F1: 0.4378 | Val Acc: 0.7788 | Time: 0.82s
+Epoch 2 | Train Loss: 0.6447 | Adv Loss: 0.2631 | LP: 0.6447 | LD: 0.2403 | LI: -0.1754 | LF: 0.0511 | Val F1: 0.8708 | Val Acc: 0.7784 | Time: 0.31s
+Epoch 3 | Train Loss: 0.5855 | Adv Loss: 0.2194 | LP: 0.5855 | LD: 0.2142 | LI: -0.1431 | LF: 0.0649 | Val F1: 0.8404 | Val Acc: 0.7483 | Time: 0.32s
+Epoch 4 | Train Loss: 0.5878 | Adv Loss: 0.2105 | LP: 0.5878 | LD: 0.2102 | LI: -0.1256 | LF: 0.0645 | Val F1: 0.8556 | Val Acc: 0.7653 | Time: 0.33s
+Epoch 5 | Train Loss: 0.5840 | Adv Loss: 0.2111 | LP: 0.5840 | LD: 0.2117 | LI: -0.1181 | LF: 0.0668 | Val F1: 0.8627 | Val Acc: 0.7731 | Time: 0.31s
+Epoch 6 | Train Loss: 0.6349 | Adv Loss: 0.2127 | LP: 0.5800 | LD: 0.2129 | LI: -0.1144 | LF: 0.0666 | Val F1: 0.8539 | Val Acc: 0.7631 | Time: 0.34s
+Epoch 7 | Train Loss: 0.6545 | Adv Loss: 0.2130 | LP: 0.5799 | LD: 0.2127 | LI: -0.1141 | LF: 0.0384 | Val F1: 0.8560 | Val Acc: 0.7649 | Time: 0.31s
+Epoch 8 | Train Loss: 0.6974 | Adv Loss: 0.2119 | LP: 0.5915 | LD: 0.2112 | LI: -0.1144 | LF: 0.0354 | Val F1: 0.8578 | Val Acc: 0.7673 | Time: 0.31s
+Epoch 9 | Train Loss: 0.6657 | Adv Loss: 0.2103 | LP: 0.5858 | LD: 0.2098 | LI: -0.1165 | LF: 0.0110 | Val F1: 0.8468 | Val Acc: 0.7560 | Time: 0.32s
+Epoch 10 | Train Loss: 0.7431 | Adv Loss: 0.2092 | LP: 0.5863 | LD: 0.2090 | LI: -0.1204 | LF: 0.0325 | Val F1: 0.8435 | Val Acc: 0.7533 | Time: 0.31s
+Epoch 11 | Train Loss: 0.7438 | Adv Loss: 0.2088 | LP: 0.5871 | LD: 0.2089 | LI: -0.1247 | LF: 0.0264 | Val F1: 0.8480 | Val Acc: 0.7577 | Time: 0.31s
+Epoch 12 | Train Loss: 0.6528 | Adv Loss: 0.2090 | LP: 0.5874 | LD: 0.2092 | LI: -0.1298 | LF: 0.0015 | Val F1: 0.8571 | Val Acc: 0.7660 | Time: 0.31s
+Epoch 13 | Train Loss: 0.8306 | Adv Loss: 0.2094 | LP: 0.6027 | LD: 0.2095 | LI: -0.1441 | LF: 0.0342 | Val F1: 0.8623 | Val Acc: 0.7697 | Time: 0.31s
+Epoch 14 | Train Loss: 0.8260 | Adv Loss: 0.2097 | LP: 0.6005 | LD: 0.2097 | LI: -0.1543 | LF: 0.0344 | Val F1: 0.8599 | Val Acc: 0.7676 | Time: 0.31s
+Epoch 15 | Train Loss: 0.7176 | Adv Loss: 0.2097 | LP: 0.5865 | LD: 0.2096 | LI: -0.1737 | LF: 0.0174 | Val F1: 0.8553 | Val Acc: 0.7647 | Time: 0.31s
+Epoch 16 | Train Loss: 0.6493 | Adv Loss: 0.2096 | LP: 0.5785 | LD: 0.2096 | LI: -0.1898 | LF: 0.0075 | Val F1: 0.8539 | Val Acc: 0.7640 | Time: 0.31s
+Epoch 17 | Train Loss: 0.6365 | Adv Loss: 0.2096 | LP: 0.5776 | LD: 0.2095 | LI: -0.2189 | LF: 0.0095 | Val F1: 0.8595 | Val Acc: 0.7699 | Time: 0.31s
+Epoch 18 | Train Loss: 0.5600 | Adv Loss: 0.2095 | LP: 0.5782 | LD: 0.2095 | LI: -0.2543 | LF: 0.0005 | Val F1: 0.8634 | Val Acc: 0.7739 | Time: 0.32s
+Epoch 19 | Train Loss: 0.5340 | Adv Loss: 0.2097 | LP: 0.5782 | LD: 0.2097 | LI: -0.2960 | LF: 0.0038 | Val F1: 0.8645 | Val Acc: 0.7748 | Time: 0.31s
+Epoch 20 | Train Loss: 0.4754 | Adv Loss: 0.2102 | LP: 0.5800 | LD: 0.2103 | LI: -0.3483 | LF: 0.0035 | Val F1: 0.8644 | Val Acc: 0.7745 | Time: 0.31s
+Epoch 21 | Train Loss: 0.4040 | Adv Loss: 0.2109 | LP: 0.5794 | LD: 0.2111 | LI: -0.3974 | LF: 0.0022 | Val F1: 0.8634 | Val Acc: 0.7739 | Time: 0.31s
+Epoch 22 | Train Loss: 0.3653 | Adv Loss: 0.2120 | LP: 0.5815 | LD: 0.2121 | LI: -0.4488 | LF: 0.0041 | Val F1: 0.8637 | Val Acc: 0.7739 | Time: 0.32s
+Epoch 23 | Train Loss: 0.3197 | Adv Loss: 0.2129 | LP: 0.5802 | LD: 0.2128 | LI: -0.4889 | LF: 0.0031 | Val F1: 0.8648 | Val Acc: 0.7752 | Time: 0.31s
+Epoch 24 | Train Loss: 0.2937 | Adv Loss: 0.2133 | LP: 0.5819 | LD: 0.2130 | LI: -0.5202 | LF: 0.0038 | Val F1: 0.8668 | Val Acc: 0.7771 | Time: 0.32s
+Epoch 25 | Train Loss: 0.2679 | Adv Loss: 0.2129 | LP: 0.5803 | LD: 0.2124 | LI: -0.5492 | LF: 0.0049 | Val F1: 0.8667 | Val Acc: 0.7769 | Time: 0.31s
+Epoch 26 | Train Loss: 0.2427 | Adv Loss: 0.2121 | LP: 0.5820 | LD: 0.2116 | LI: -0.5681 | LF: 0.0034 | Val F1: 0.8669 | Val Acc: 0.7775 | Time: 0.32s
+Epoch 27 | Train Loss: 0.2384 | Adv Loss: 0.2112 | LP: 0.5797 | LD: 0.2107 | LI: -0.5825 | LF: 0.0061 | Val F1: 0.8653 | Val Acc: 0.7763 | Time: 0.31s
+Epoch 28 | Train Loss: 0.2130 | Adv Loss: 0.2103 | LP: 0.5815 | LD: 0.2100 | LI: -0.5945 | LF: 0.0032 | Val F1: 0.8632 | Val Acc: 0.7739 | Time: 0.31s
+Epoch 29 | Train Loss: 0.2221 | Adv Loss: 0.2098 | LP: 0.5790 | LD: 0.2096 | LI: -0.6010 | LF: 0.0069 | Val F1: 0.8613 | Val Acc: 0.7721 | Time: 0.31s
+Epoch 30 | Train Loss: 0.1905 | Adv Loss: 0.2094 | LP: 0.5808 | LD: 0.2093 | LI: -0.6116 | LF: 0.0024 | Val F1: 0.8647 | Val Acc: 0.7757 | Time: 0.31s
+Epoch 31 | Train Loss: 0.2052 | Adv Loss: 0.2092 | LP: 0.5783 | LD: 0.2091 | LI: -0.6165 | LF: 0.0068 | Val F1: 0.8647 | Val Acc: 0.7757 | Time: 0.32s
+Early stopping at epoch 31
+FairGNN-WOD Training Finished. Total Time: 10.28s
+
+Restoring best model for final evaluation...
+--------------------------------------------------
+Test Set Results (credit):
+     AUC: 0.6832
+Accuracy: 0.7743
+F1 Score: 0.8648
+Fairness Metrics:
+  sp: [0.0531, -0.0531]
+  eo: [0.0879, -0.0329]
+--------------------------------------------------

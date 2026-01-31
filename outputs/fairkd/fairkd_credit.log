@@ -1,0 +1,103 @@
+{'model': 'fairkd', 'task': 'train', 'dataset': 'credit', 'dgl_data': False, 'device': 'cpu', 'seed': 0, 'epochs': 200, 'print_every': 1, 'save_every': -1, 'lr': 0.01, 'weight_decay': 0.0005, 'hidden': 64, 'patience': 20, 'warmup': 50, 'dropout': 0.0, 'kd_temp': 4, 'kd_lambda': 0.5, 'hidden_vgae': 64, 'latent_size': 32, 'hgr_steps_per_epoch': 2, 'lambda_hgr': 0.5, 'hidden_hgr': 64, 'channels': 8, 'lambda_dd': 0.1, 'alpha': 0.1, 'beta': 1.0, 'gamma': 5.0, 'adv_steps_per_epoch': 2, 'mask_warmup': 0.4}
+--- Starting train FAIRKD on credit ---
+Starting FairKD training on credit...
+Epoch: 1 | Loss: 0.4403 | Val F1: 0.8748028539241457 | Val Acc: 0.7777 | Time: 0.1184s
+Epoch: 2 | Loss: 0.3878 | Val F1: 0.8746214415505754 | Val Acc: 0.7792 | Time: 0.0713s
+Epoch: 3 | Loss: 0.3631 | Val F1: 0.8672268907563025 | Val Acc: 0.7788 | Time: 0.0678s
+Epoch: 4 | Loss: 0.3362 | Val F1: 0.8480820995962315 | Val Acc: 0.7592 | Time: 0.0698s
+Epoch: 5 | Loss: 0.3247 | Val F1: 0.8329306178805661 | Val Acc: 0.7419 | Time: 0.0693s
+Epoch: 6 | Loss: 0.3237 | Val F1: 0.8349948435888621 | Val Acc: 0.7440 | Time: 0.0724s
+Epoch: 7 | Loss: 0.3185 | Val F1: 0.8426223953921734 | Val Acc: 0.7523 | Time: 0.0700s
+Epoch: 8 | Loss: 0.3145 | Val F1: 0.8510886794026863 | Val Acc: 0.7620 | Time: 0.0687s
+Epoch: 9 | Loss: 0.3141 | Val F1: 0.8556786245660439 | Val Acc: 0.7672 | Time: 0.0691s
+Epoch: 10 | Loss: 0.3105 | Val F1: 0.860919540229885 | Val Acc: 0.7741 | Time: 0.0645s
+Epoch: 11 | Loss: 0.3052 | Val F1: 0.863307009688187 | Val Acc: 0.7761 | Time: 0.0695s
+Epoch: 12 | Loss: 0.3027 | Val F1: 0.8648080808080808 | Val Acc: 0.7769 | Time: 0.0675s
+Epoch: 13 | Loss: 0.3025 | Val F1: 0.8646379853095488 | Val Acc: 0.7764 | Time: 0.0673s
+Epoch: 14 | Loss: 0.3015 | Val F1: 0.8652128430031383 | Val Acc: 0.7767 | Time: 0.0663s
+Epoch: 15 | Loss: 0.2996 | Val F1: 0.8667094909266099 | Val Acc: 0.7787 | Time: 0.0671s
+Epoch: 16 | Loss: 0.2983 | Val F1: 0.8670251183693123 | Val Acc: 0.7791 | Time: 0.0737s
+Epoch: 17 | Loss: 0.2967 | Val F1: 0.8657124477323899 | Val Acc: 0.7773 | Time: 0.0663s
+Epoch: 18 | Loss: 0.2943 | Val F1: 0.8647907764250584 | Val Acc: 0.7764 | Time: 0.0728s
+Epoch: 19 | Loss: 0.2927 | Val F1: 0.8625323834196891 | Val Acc: 0.7736 | Time: 0.0681s
+Epoch: 20 | Loss: 0.2929 | Val F1: 0.8627895674712458 | Val Acc: 0.7741 | Time: 0.0694s
+Epoch: 21 | Loss: 0.2933 | Val F1: 0.8641238609789533 | Val Acc: 0.7753 | Time: 0.0717s
+Epoch: 22 | Loss: 0.2923 | Val F1: 0.8654077942948976 | Val Acc: 0.7767 | Time: 0.0721s
+Epoch: 23 | Loss: 0.2913 | Val F1: 0.8671362253881864 | Val Acc: 0.7787 | Time: 0.0704s
+Epoch: 24 | Loss: 0.2908 | Val F1: 0.8675718849840256 | Val Acc: 0.7789 | Time: 0.0664s
+Epoch: 25 | Loss: 0.2899 | Val F1: 0.8668423995526799 | Val Acc: 0.7777 | Time: 0.0716s
+Epoch: 26 | Loss: 0.2895 | Val F1: 0.8662135145941623 | Val Acc: 0.7769 | Time: 0.0686s
+Epoch: 27 | Loss: 0.2900 | Val F1: 0.8662298225986894 | Val Acc: 0.7768 | Time: 0.0694s
+Epoch: 28 | Loss: 0.2902 | Val F1: 0.8671395552721766 | Val Acc: 0.7777 | Time: 0.0699s
+Epoch: 29 | Loss: 0.2899 | Val F1: 0.8678645253617427 | Val Acc: 0.7784 | Time: 0.0705s
+Epoch: 30 | Loss: 0.2897 | Val F1: 0.8675675675675676 | Val Acc: 0.7779 | Time: 0.0693s
+Epoch: 31 | Loss: 0.2895 | Val F1: 0.8671183738541252 | Val Acc: 0.7777 | Time: 0.0714s
+Epoch: 32 | Loss: 0.2889 | Val F1: 0.865888746803069 | Val Acc: 0.7763 | Time: 0.0667s
+Epoch: 33 | Loss: 0.2888 | Val F1: 0.8653152792244211 | Val Acc: 0.7759 | Time: 0.0730s
+Epoch: 34 | Loss: 0.2890 | Val F1: 0.8649731549002324 | Val Acc: 0.7753 | Time: 0.0704s
+Epoch: 35 | Loss: 0.2890 | Val F1: 0.865289123818677 | Val Acc: 0.7757 | Time: 0.0708s
+Epoch: 36 | Loss: 0.2888 | Val F1: 0.8654877170520925 | Val Acc: 0.7759 | Time: 0.0721s
+Epoch: 37 | Loss: 0.2887 | Val F1: 0.8654615261558151 | Val Acc: 0.7757 | Time: 0.0676s
+Epoch: 38 | Loss: 0.2884 | Val F1: 0.8654877170520925 | Val Acc: 0.7759 | Time: 0.0724s
+Epoch: 39 | Loss: 0.2882 | Val F1: 0.86510287406933 | Val Acc: 0.7753 | Time: 0.0696s
+Epoch: 40 | Loss: 0.2883 | Val F1: 0.8656429942418427 | Val Acc: 0.7760 | Time: 0.0671s
+Epoch: 41 | Loss: 0.2883 | Val F1: 0.8663631280453711 | Val Acc: 0.7769 | Time: 0.0687s
+Epoch: 42 | Loss: 0.2881 | Val F1: 0.8663101604278075 | Val Acc: 0.7767 | Time: 0.0688s
+Epoch: 43 | Loss: 0.2880 | Val F1: 0.8666347228877176 | Val Acc: 0.7773 | Time: 0.0700s
+Epoch: 44 | Loss: 0.2879 | Val F1: 0.8659414493681011 | Val Acc: 0.7765 | Time: 0.0703s
+Epoch: 45 | Loss: 0.2877 | Val F1: 0.8653368581270527 | Val Acc: 0.7759 | Time: 0.0692s
+Epoch: 46 | Loss: 0.2876 | Val F1: 0.8648041104688503 | Val Acc: 0.7755 | Time: 0.0693s
+Epoch: 47 | Loss: 0.2876 | Val F1: 0.8644871073981846 | Val Acc: 0.7751 | Time: 0.0703s
+Epoch: 48 | Loss: 0.2876 | Val F1: 0.865142398716406 | Val Acc: 0.7759 | Time: 0.0709s
+Epoch: 49 | Loss: 0.2875 | Val F1: 0.8660471078352828 | Val Acc: 0.7771 | Time: 0.0688s
+Epoch: 50 | Loss: 0.2874 | Val F1: 0.8661064425770308 | Val Acc: 0.7769 | Time: 0.0706s
+Epoch: 51 | Loss: 0.2873 | Val F1: 0.8657170294494239 | Val Acc: 0.7763 | Time: 0.0684s
+Epoch: 52 | Loss: 0.2872 | Val F1: 0.865877080665813 | Val Acc: 0.7765 | Time: 0.0677s
+Epoch: 53 | Loss: 0.2872 | Val F1: 0.8659678322797472 | Val Acc: 0.7767 | Time: 0.0677s
+Epoch: 54 | Loss: 0.2872 | Val F1: 0.8657863145258103 | Val Acc: 0.7764 | Time: 0.0698s
+Epoch: 55 | Loss: 0.2871 | Val F1: 0.8659463785514205 | Val Acc: 0.7767 | Time: 0.0694s
+Epoch: 56 | Loss: 0.2870 | Val F1: 0.8660421170630155 | Val Acc: 0.7769 | Time: 0.0680s
+Epoch: 57 | Loss: 0.2869 | Val F1: 0.8656836031415291 | Val Acc: 0.7765 | Time: 0.0702s
+Epoch: 58 | Loss: 0.2868 | Val F1: 0.8652766639935846 | Val Acc: 0.7760 | Time: 0.0684s
+Epoch: 59 | Loss: 0.2868 | Val F1: 0.8652766639935846 | Val Acc: 0.7760 | Time: 0.0688s
+Epoch: 60 | Loss: 0.2868 | Val F1: 0.8654108216432865 | Val Acc: 0.7761 | Time: 0.0698s
+Epoch: 61 | Loss: 0.2867 | Val F1: 0.8659083627042614 | Val Acc: 0.7768 | Time: 0.0661s
+Epoch: 62 | Loss: 0.2867 | Val F1: 0.8658604949147113 | Val Acc: 0.7767 | Time: 0.0713s
+Epoch: 63 | Loss: 0.2866 | Val F1: 0.865769662021464 | Val Acc: 0.7765 | Time: 0.0690s
+Epoch: 64 | Loss: 0.2866 | Val F1: 0.8657481576417815 | Val Acc: 0.7765 | Time: 0.0718s
+Epoch: 65 | Loss: 0.2865 | Val F1: 0.8656572939197308 | Val Acc: 0.7764 | Time: 0.0700s
+Epoch: 66 | Loss: 0.2865 | Val F1: 0.86613290632506 | Val Acc: 0.7771 | Time: 0.0716s
+Epoch: 67 | Loss: 0.2864 | Val F1: 0.8664051869046666 | Val Acc: 0.7775 | Time: 0.0671s
+Epoch: 68 | Loss: 0.2864 | Val F1: 0.865929841422393 | Val Acc: 0.7768 | Time: 0.0699s
+Epoch: 69 | Loss: 0.2864 | Val F1: 0.8654323956079186 | Val Acc: 0.7761 | Time: 0.0693s
+Epoch: 70 | Loss: 0.2863 | Val F1: 0.8650685480638178 | Val Acc: 0.7756 | Time: 0.0712s
+Epoch: 71 | Loss: 0.2863 | Val F1: 0.8651595318261985 | Val Acc: 0.7757 | Time: 0.0700s
+Epoch: 72 | Loss: 0.2862 | Val F1: 0.8653846153846154 | Val Acc: 0.7760 | Time: 0.0684s
+Epoch: 73 | Loss: 0.2862 | Val F1: 0.8654277475168215 | Val Acc: 0.7760 | Time: 0.0692s
+Epoch: 74 | Loss: 0.2862 | Val F1: 0.8654708520179372 | Val Acc: 0.7760 | Time: 0.0720s
+Epoch: 75 | Loss: 0.2861 | Val F1: 0.865289123818677 | Val Acc: 0.7757 | Time: 0.0661s
+Epoch: 76 | Loss: 0.2861 | Val F1: 0.8652198286217666 | Val Acc: 0.7756 | Time: 0.0700s
+Epoch: 77 | Loss: 0.2860 | Val F1: 0.8651550356541944 | Val Acc: 0.7756 | Time: 0.0712s
+Epoch: 78 | Loss: 0.2860 | Val F1: 0.8653198653198653 | Val Acc: 0.7760 | Time: 0.0714s
+Epoch: 79 | Loss: 0.2860 | Val F1: 0.8650946422842477 | Val Acc: 0.7757 | Time: 0.0709s
+Epoch: 80 | Loss: 0.2859 | Val F1: 0.8651856604378859 | Val Acc: 0.7759 | Time: 0.0703s
+Epoch: 81 | Loss: 0.2859 | Val F1: 0.8652288944119297 | Val Acc: 0.7759 | Time: 0.0731s
+Epoch: 82 | Loss: 0.2859 | Val F1: 0.8658175118160698 | Val Acc: 0.7767 | Time: 0.0661s
+Epoch: 83 | Loss: 0.2858 | Val F1: 0.8657266463707739 | Val Acc: 0.7765 | Time: 0.0708s
+Epoch: 84 | Loss: 0.2858 | Val F1: 0.8657745011619521 | Val Acc: 0.7767 | Time: 0.0719s
+Epoch: 85 | Loss: 0.2858 | Val F1: 0.8657314629258517 | Val Acc: 0.7767 | Time: 0.0697s
+Epoch: 86 | Loss: 0.2857 | Val F1: 0.865640532307199 | Val Acc: 0.7765 | Time: 0.0716s
+Epoch: 87 | Loss: 0.2857 | Val F1: 0.8654586273252085 | Val Acc: 0.7763 | Time: 0.0697s
+Early stopping at epoch 87
+Training Finished. Total Time: 6.1097s
+
+Restoring best model...
+--------------------------------------------------
+Test Set Results (credit):
+     AUC: 0.6975
+Accuracy: 0.7767
+F1 Score: 0.8663
+Fairness Metrics:
+  sp: [0.0596, -0.0596]
+  eo: [0.0818, -0.0432]
+--------------------------------------------------
