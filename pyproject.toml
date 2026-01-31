@@ -1,0 +1,23 @@
+[project]
+name = "fairgnn-wod-reproduction"
+description = "FairGNN-WOD Reproduction"
+version = "0.1.0"
+readme = "README.md"
+requires-python = ">=3.11"
+
+dependencies = [
+    "numpy>=1.26",
+    "torch>=2.2",
+    "torch-geometric>=2.7",
+    "torchdata>=0.11",
+]
+
+[project.optional-dependencies]
+dev = [
+    "jupyter",
+    "notebook",
+]
+
+dgl_data = [
+    "dgl>=2.2",
+]
