@@ -16,6 +16,7 @@ dependencies = [
 dev = [
     "jupyter",
     "notebook",
+    "matplotlib",
 ]
 
 dgl_data = [

@@ -17,42 +17,42 @@ def main():
     parser.add_argument('--task', type=str, default='train', choices=['train', 'predict'])
     parser.add_argument('--dataset', type=str, default='credit',
                         choices=['dblp', 'pokec_z', 'pokec_n', 'credit'])
-    parser.add_argument('--dgl_data', action='store_true')
+    parser.add_argument('--dgl_data', action='store_true')     # Choose whether to use dgl data
     parser.add_argument('--device', type=str, default='cuda' if torch.cuda.is_available() else 'cpu')
     parser.add_argument('--seed', type=int, default=0)
 
     # Shared Hyperparameters
-    parser.add_argument('--epochs', type=int, default=200)
-    parser.add_argument('--print_every', type=int, default=1)
-    parser.add_argument('--save_every', type=int, default=-1)
+    parser.add_argument('--epochs', type=int, default=200)      # Max training epochs
+    parser.add_argument('--patience', type=int, default=20)     # Patience for early stopping
+    parser.add_argument('--warmup', type=int, default=50)       # Warmup before early stopping enables and for loss scheduling
+    parser.add_argument('--print_every', type=int, default=1)   # How often eval is printed
+    parser.add_argument('--save_every', type=int, default=-1)   # How often checkpoints are saved
     parser.add_argument('--lr', type=float, default=0.01)
     parser.add_argument('--weight_decay', type=float, default=5e-4)
-    parser.add_argument('--hidden', type=int, default=64)
-    parser.add_argument('--patience', type=int, default=20)
-    parser.add_argument('--warmup', type=int, default=50)
+    parser.add_argument('--hidden', type=int, default=64)       # Size of hidden layer for GCN, FairKD, fGNN-WOD
 
     # GCN Specifics
     parser.add_argument('--dropout', type=float, default=0.0)
 
     # FairKD Specific
-    parser.add_argument('--kd_temp', type=float, default=4)
-    parser.add_argument('--kd_lambda', type=float, default=0.5)
+    parser.add_argument('--kd_temp', type=float, default=4)         # KD temperature
+    parser.add_argument('--kd_lambda', type=float, default=0.5)     # Distillation loss
 
     # VGAE Specific
-    parser.add_argument('--hidden_vgae', type=int, default=256)
-    parser.add_argument('--latent_size', type=int, default=32)
-    parser.add_argument('--hgr_steps_per_epoch', type=int, default=10)
-    parser.add_argument('--lambda_hgr', type=float, default=0.5)
-    parser.add_argument('--hidden_hgr', type=int, default=512)
+    parser.add_argument('--hidden_vgae', type=int, default=256)     # Hidden layer size of VGAE (stage 1)
+    parser.add_argument('--latent_size', type=int, default=32)      # Dimension of latent embedding
+    parser.add_argument('--hgr_steps_per_epoch', type=int, default=10)  # HGR estimator train steps per epoch
+    parser.add_argument('--lambda_hgr', type=float, default=0.5)    # Weight of discriminator loss
+    parser.add_argument('--hidden_hgr', type=int, default=512)      # Hidden size of HGR net
 
     # FairGNN-WOD Specific
-    parser.add_argument('--channels', type=int, default=8)
-    parser.add_argument('--lambda_dd', type=float, default=0.1)   # Lambda for the discriminator
-    parser.add_argument('--alpha', type=float, default=1.0)  # Weight for LI
-    parser.add_argument('--beta', type=float, default=1.0)  # Weight for LD
-    parser.add_argument('--gamma', type=float, default=5.0)  # Weight for LF
-    parser.add_argument('--adv_steps_per_epoch', type=int, default=2)
-    parser.add_argument('--mask_warmup', type=float, default=0.2)
+    parser.add_argument('--channels', type=int, default=8)          # Number of disentangled channels
+    parser.add_argument('--lambda_dd', type=float, default=0.1)     # Weight for gradient flow from discriminator to rest
+    parser.add_argument('--alpha', type=float, default=1.0)         # Weight for LI
+    parser.add_argument('--beta', type=float, default=1.0)          # Weight for LD
+    parser.add_argument('--gamma', type=float, default=5.0)         # Weight for LF
+    parser.add_argument('--adv_steps_per_epoch', type=int, default=2)   # Discriminator train steps per epoch
+    parser.add_argument('--mask_warmup', type=float, default=0.2)       # Proportion of warmup epochs before applying masking
 
     args = parser.parse_args()
     print(vars(args))
@@ -72,8 +72,8 @@ def main():
             train_stage2(data, args)
         elif args.model == 'fairkd':
             train_fairkd(data, args)
-    elif args.task == 'predict':
-        raise NotImplementedError("Inference logic not implemented yet.")
+    else:
+        raise NotImplementedError("Only training task implemented. For evaluation, run training with existing model.")
 
 
 if __name__ == "__main__":
