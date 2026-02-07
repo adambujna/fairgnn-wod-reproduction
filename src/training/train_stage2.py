@@ -1,6 +1,7 @@
 #!/usr/bin/env/python
 
 import time
+import os
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -131,72 +132,78 @@ def train_stage2(data, args):
         num_channels=args.channels
     ).to(device)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    optimizer = torch.optim.Adam(model.parameters(),
+                                 lr=args.lr,
+                                 weight_decay=args.weight_decay)
 
-    # 3. Setup Saving and Early Stopping
     model_save_basename = f"{MODEL_DIR}/stage2/fairgnnwod_{args.dataset}"
-    if args.save_every != -1:    # save initialized weights at epoch 0 also if saving periodically
-        torch.save(model.state_dict(), model_save_basename + '_0.pt')
-    early_stop = EarlyStoppingCriterion(
-        patience=args.patience,
-        mode='max',
-        start_from_epoch=args.warmup,
-        save_basename=model_save_basename
-    )
-
-    # 4. Loss scheduling to prevent too many losses optimized at the beginning at the same time
-    li_scheduler = LossScheduler(args.alpha,
-                                 int(args.warmup * 0.4),
-                                 int(args.warmup),
-                                 'linear')
-    ld_scheduler = LossScheduler(args.beta,
-                                 int(args.warmup * args.mask_warmup),
-                                 int(args.warmup),
-                                 'linear')
-    lf_scheduler = LossScheduler(args.gamma,
-                                 int(args.warmup * 0.2),
-                                 int(args.warmup * 0.6),
-                                 'linear')
-    lambda_scheduler = LossScheduler(args.lambda_dd,
-                                     int(args.warmup * 0.6),
-                                     int(args.warmup),
-                                     'sigmoid')
-
-    print(f"Starting Stage 2 (FairGNN-WOD) training on {args.dataset}...")
-    t_total = time.time()
-
-    for epoch in range(args.epochs):
-        t = time.time()
-
-        alpha = li_scheduler.get_weight(epoch)
-        beta = ld_scheduler.get_weight(epoch)
-        gamma = lf_scheduler.get_weight(epoch)
-        lambda_dd = lambda_scheduler.get_weight(epoch)
-
-        mask = epoch > args.mask_warmup * args.warmup
-
-        loss, lp, ld, li, lf, adv_loss = train_step(
-            model, optimizer, adj, x, y, edge_index, mask,
-            idx_train, args.adv_steps_per_epoch, alpha, beta, gamma, lambda_dd
+    best_model_path = f'{model_save_basename}_best.pt'
+    if os.path.exists(best_model_path):
+        print(f"Found existing best model at {best_model_path}. Skipping training.")
+    else:
+        # 3. Setup Saving and Early Stopping
+        if args.save_every != -1:    # save initialized weights at epoch 0 also if saving periodically
+            torch.save(model.state_dict(), model_save_basename + '_0.pt')
+        early_stop = EarlyStoppingCriterion(
+            patience=args.patience,
+            mode='max',
+            start_from_epoch=args.warmup,
+            save_basename=model_save_basename
         )
 
-        # Validate
-        val_metrics = evaluate(model, adj, x, y, edge_index, idx_val, s_true)
+        # 4. Loss scheduling to prevent too many losses optimized at the beginning at the same time
+        li_scheduler = LossScheduler(args.alpha,
+                                     int(args.warmup * 0.4),
+                                     int(args.warmup),
+                                     'linear')
+        ld_scheduler = LossScheduler(args.beta,
+                                     int(args.warmup * args.mask_warmup),
+                                     int(args.warmup),
+                                     'linear')
+        lf_scheduler = LossScheduler(args.gamma,
+                                     int(args.warmup * 0.2),
+                                     int(args.warmup * 0.6),
+                                     'linear')
+        lambda_scheduler = LossScheduler(args.lambda_dd,
+                                         int(args.warmup * 0.6),
+                                         int(args.warmup),
+                                         'sigmoid')
 
-        if args.print_every != -1 and (epoch + 1) % args.print_every == 0:
-            print(f"Epoch {epoch + 1} | Train Loss: {loss:.4f} | Adv Loss: {adv_loss:.4f} | "
-                  f"LP: {lp:.4f} | LD: {ld:.4f} | LI: {li:.4f} | LF: {lf:.4f} | "
-                  f"Val F1: {val_metrics['f1']:.4f} | Val Acc: {val_metrics['acc']:.4f} | Time: {time.time() - t:.2f}s")
+        print(f"Starting Stage 2 (FairGNN-WOD) training on {args.dataset}...")
+        t_total = time.time()
 
-        if args.save_every != -1 and (epoch + 1) % args.save_every == 0:
-            torch.save(model.state_dict(), f"{model_save_basename}_{epoch + 1}.pt")
+        for epoch in range(args.epochs):
+            t = time.time()
 
-        # Early stopping based on Val F1
-        if early_stop.step(val_metrics['f1'], model):
-            print(f"Early stopping at epoch {epoch + 1}")
-            break
+            alpha = li_scheduler.get_weight(epoch)
+            beta = ld_scheduler.get_weight(epoch)
+            gamma = lf_scheduler.get_weight(epoch)
+            lambda_dd = lambda_scheduler.get_weight(epoch)
 
-    print(f"FairGNN-WOD Training Finished. Total Time: {time.time() - t_total:.2f}s")
+            mask = epoch > args.mask_warmup * args.warmup
+
+            loss, lp, ld, li, lf, adv_loss = train_step(
+                model, optimizer, adj, x, y, edge_index, mask,
+                idx_train, args.adv_steps_per_epoch, alpha, beta, gamma, lambda_dd
+            )
+
+            # Validate
+            val_metrics = evaluate(model, adj, x, y, edge_index, idx_val, s_true)
+
+            if args.print_every != -1 and (epoch + 1) % args.print_every == 0:
+                print(f"Epoch {epoch + 1} | Train Loss: {loss:.4f} | Adv Loss: {adv_loss:.4f} | "
+                      f"LP: {lp:.4f} | LD: {ld:.4f} | LI: {li:.4f} | LF: {lf:.4f} | "
+                      f"Val F1: {val_metrics['f1']:.4f} | Val Acc: {val_metrics['acc']:.4f} | Time: {time.time() - t:.2f}s")
+
+            if args.save_every != -1 and (epoch + 1) % args.save_every == 0:
+                torch.save(model.state_dict(), f"{model_save_basename}_{epoch + 1}.pt")
+
+            # Early stopping based on Val F1
+            if early_stop.step(val_metrics['f1'], model):
+                print(f"Early stopping at epoch {epoch + 1}")
+                break
+
+        print(f"FairGNN-WOD Training Finished. Total Time: {time.time() - t_total:.2f}s")
 
     # 4. Testing with the best model
     print("\nRestoring best model for final evaluation...")

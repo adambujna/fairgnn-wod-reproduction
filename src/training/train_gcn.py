@@ -1,6 +1,7 @@
 #!/usr/bin/env/python
 
 import time
+import os
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -90,44 +91,47 @@ def train_gcn(data, args):
         lr=args.lr,
         weight_decay=args.weight_decay
     )
-
-    # Training Loop
     model_save_basename = MODEL_DIR + f"/gcn/gcn_{args.dataset}"
-    if args.save_every != -1:    # save initialized weights at epoch 0 also if saving periodically
-        torch.save(model.state_dict(), model_save_basename + '_0.pt')
-    early_stop = EarlyStoppingCriterion(patience=args.patience,
-                                        mode='max',
-                                        start_from_epoch=args.warmup,
-                                        save_basename=model_save_basename)
-    print(f"Starting GCN training on {args.dataset}...")
-    t_total = time.time()
+    best_model_path = f'{model_save_basename}_best.pt'
+    if os.path.exists(best_model_path):
+        print(f"Found existing best model at {best_model_path}. Skipping training.")
+    else:
+        # Training Loop
+        if args.save_every != -1:    # save initialized weights at epoch 0 also if saving periodically
+            torch.save(model.state_dict(), model_save_basename + '_0.pt')
+        early_stop = EarlyStoppingCriterion(patience=args.patience,
+                                            mode='max',
+                                            start_from_epoch=args.warmup,
+                                            save_basename=model_save_basename)
+        print(f"Starting GCN training on {args.dataset}...")
+        t_total = time.time()
 
-    for epoch in range(args.epochs):
-        t = time.time()
-        loss_train = train_step(model, optimizer, adj, x, y, idx_train)
+        for epoch in range(args.epochs):
+            t = time.time()
+            loss_train = train_step(model, optimizer, adj, x, y, idx_train)
 
-        # Validate
-        val_metrics = evaluate(model, adj, x, y, idx_val)
+            # Validate
+            val_metrics = evaluate(model, adj, x, y, idx_val)
 
-        if args.print_every != -1 and (epoch + 1) % args.print_every == 0:
-            print(f"Epoch: {epoch + 1} | "
-                  f"Loss: {loss_train:.4f} | "
-                  f"Val F1: {val_metrics['f1']} | "
-                  f"Val Acc: {val_metrics['acc']:.4f} | "
-                  f"Time: {time.time() - t:.4f}s")
+            if args.print_every != -1 and (epoch + 1) % args.print_every == 0:
+                print(f"Epoch: {epoch + 1} | "
+                      f"Loss: {loss_train:.4f} | "
+                      f"Val F1: {val_metrics['f1']} | "
+                      f"Val Acc: {val_metrics['acc']:.4f} | "
+                      f"Time: {time.time() - t:.4f}s")
 
-        if args.save_every != -1 and (epoch + 1) % args.save_every == 0:
-            torch.save(model.state_dict(), f"/{model_save_basename}_{epoch + 1}.pt")
+            if args.save_every != -1 and (epoch + 1) % args.save_every == 0:
+                torch.save(model.state_dict(), f"/{model_save_basename}_{epoch + 1}.pt")
 
-        if early_stop.step(val_metrics['f1'], model):
-            print(f"Early stopping at epoch {epoch + 1}")
-            break
+            if early_stop.step(val_metrics['f1'], model):
+                print(f"Early stopping at epoch {epoch + 1}")
+                break
 
-    print(f"Training Finished. Total Time: {time.time() - t_total:.4f}s")
+        print(f"Training Finished. Total Time: {time.time() - t_total:.4f}s")
 
     # Testing
     print("\nRestoring best model...")
-    model.load_state_dict(torch.load(f'{model_save_basename}_best.pt'))
+    model.load_state_dict(torch.load(best_model_path))
 
     test_metrics = evaluate(model, adj, x, y, idx_test, sensitive)
 

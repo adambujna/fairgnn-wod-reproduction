@@ -189,4 +189,3 @@ def train_vgae(data, args):
         torch.save(hgr_net.state_dict(), f"{hgr_save_basename}_last.pt")
 
     print(f"VGAE Training Finished. Total Time: {time.time() - t_total:.2f}s")
-
