@@ -6,6 +6,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
+from typing import Any
+
 from src.utils.metrics import f1_score, accuracy, fairness_metrics, auc_score
 from src.utils.utils import format_metric
 from src.utils.EarlyStoppingCriterion import EarlyStoppingCriterion
@@ -13,7 +15,39 @@ from src.models.gcn.GCN import GCN
 from src.paths import MODEL_DIR
 
 
-def train_step(model, optimizer, adj, x, y, idx_train):
+def train_step(
+    model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    adj: torch.Tensor,
+    x: torch.Tensor,
+    y: torch.Tensor,
+    idx_train: torch.Tensor
+) -> float:
+    """
+    Perform a single training iteration for the standard GCN.
+
+    This is a vanilla node classification step without any fairness constraints.
+
+    Parameters
+    ----------
+    model : nn.Module
+        The Graph Convolutional Network (GCN) model.
+    optimizer : torch.optim.Optimizer
+        The optimizer for the model parameters.
+    adj : torch.Tensor
+        Adjacency matrix [N, N].
+    x : torch.Tensor
+        Node feature matrix [N, D].
+    y : torch.Tensor
+        Ground truth target labels [N].
+    idx_train : torch.Tensor
+        Indices for the training set.
+
+    Returns
+    -------
+    float
+        The scalar Cross-Entropy loss for the current step.
+    """
     model.train()
     optimizer.zero_grad()
 
@@ -27,7 +61,37 @@ def train_step(model, optimizer, adj, x, y, idx_train):
 
 
 @torch.no_grad()
-def evaluate(model, adj, x, y, idx, sensitive=None):
+def evaluate(
+    model: torch.nn.Module,
+    adj: torch.Tensor,
+    x: torch.Tensor,
+    y: torch.Tensor,
+    idx: torch.Tensor,
+    sensitive: torch.Tensor | None = None
+) -> dict[str, float]:
+    """
+    Evaluate the GCN model on a given data split.
+
+    Parameters
+    ----------
+    model : nn.Module
+        The GCN model to evaluate.
+    adj : torch.Tensor
+        Adjacency matrix [N, N].
+    x : torch.Tensor
+        Node feature matrix [N, D].
+    y : torch.Tensor
+        Ground truth target labels [N].
+    idx : torch.Tensor
+        Indices for the evaluation split (validation or test).
+    sensitive : torch.Tensor, optional
+        Ground truth sensitive attributes.
+
+    Returns
+    -------
+    Dict[str, float]
+        Dictionary containing 'loss', 'acc', 'f1', 'auc', and fairness scores.
+    """
     model.eval()
     output = model(adj, x)
 
@@ -46,7 +110,7 @@ def evaluate(model, adj, x, y, idx, sensitive=None):
     except ValueError:
         auc = 0.5
 
-    metrics = {"loss": loss, "acc": acc, "f1": f1, "auc": auc}
+    metrics: dict[str, Any] = {"loss": loss, "acc": acc, "f1": f1, "auc": auc}
 
     # Calculate fairness if sensitive attribute is provided
     if sensitive is not None:
@@ -56,7 +120,20 @@ def evaluate(model, adj, x, y, idx, sensitive=None):
     return metrics
 
 
-def train_gcn(data, args):
+def train_gcn(data: Any, args: Any) -> None:
+    """
+    Orchestrate the standard GCN training process.
+
+    This function trains a baseline model that aims purely for performance on the primary classification task.
+    Its saved weights will be used as the Teacher network for the FairKD pipeline.
+
+    Parameters
+    ----------
+    data : Any
+        Data object containing graph structure, features, and labels.
+    args : Any
+        Configuration object containing hyperparameters.
+    """
     # Set seeds
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)

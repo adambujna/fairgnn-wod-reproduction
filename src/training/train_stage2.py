@@ -2,9 +2,11 @@
 
 import time
 import os
+
 import numpy as np
 import torch
 import torch.nn.functional as F
+from typing import Any
 
 from src.models.fairgnn_wod.FairGNNWOD import FairGNNWOD
 from src.models.vgae.DemographicVGAE import DemographicVGAE
@@ -16,40 +18,127 @@ from src.utils.LossScheduler import LossScheduler
 from src.paths import MODEL_DIR
 
 
-def train_discriminator(model, adj, x, edge_index, idx_train):
-    model.train()
-    model.vgae.eval()
+def train_discriminator(model: torch.nn.Module,
+                        optimizer: torch.optim.Optimizer,
+                        adj: torch.Tensor, x: torch.Tensor,
+                        edge_index: torch.Tensor,
+                        idx_train: torch.Tensor,) -> float:
+    """
+    The 'Inner Loop': Trains the demographic probe to detect sensitive info.
 
-    y_logits, h, c_logits, s_pred = model(adj, x, edge_index, -1, mask=False)
+    This function isolates the DemographicClassifier and trains it to map
+    the current latent channels to the sensitive attributes ($s_{pred}$)
+    inferred by the VGAE.
+
+    Parameters
+    ----------
+    model : FairGNNWOD
+        The full Stage 2 model.
+    optimizer : torch.optim.Optimizer
+        The optimizer specifically for the model.demographic_classifier.
+    adj : torch.Tensor
+        Adjacency matrix [N, N].
+    x : torch.Tensor
+        Node features [N, D].
+    edge_index : torch.Tensor
+        Graph edges [2, E].
+    idx_train : torch.Tensor
+        Indices of nodes used for training.
+
+    Returns
+    -------
+    float
+        The scalar value of the discriminator loss.
+    """
+    model.train()
+    model.vgae.eval()   # Stage 1 always remains frozen
+    optimizer.zero_grad()   # Discriminator optimizer
+
+    # Forward pass with gradient reversal disabled
+    # to purely update the discriminator's ability to predict.
+    y_logits, h, c_logits, s_pred = model(adj, x, edge_index, 0.0, mask=False)
 
     ld = demographic_loss(c_logits[:, idx_train, :], s_pred[idx_train].long())
     ld.backward()
+    # Update discriminator parameters
+    optimizer.step()
 
     return ld.item()
 
 
-def train_step(model, optimizer, adj, x, y, edge_index, mask, idx_train, adv_steps, alpha, beta, gamma, lambda_):
+def train_step(
+    model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    disc_optimizer: torch.optim.Optimizer,
+    adj: torch.Tensor,
+    x: torch.Tensor,
+    y: torch.Tensor,
+    edge_index: torch.Tensor,
+    mask: bool,
+    idx_train: torch.Tensor,
+    adv_steps: int,
+    alpha: float,
+    beta: float,
+    gamma: float,
+    lambda_: float
+) -> tuple[float, float, float, float, float, float]:
+    """
+    Executes a single training iteration of Stage 2.
+
+    Parameters
+    ----------
+    model : FairGNNWOD
+        The entire model.
+    optimizer : torch.optim.Optimizer
+        Optimizer for the entire model.
+    disc_optimizer : torch.optim.Optimizer
+        Optimizer for the adversarial demographic classifier for independent training.
+    adj : torch.Tensor
+        Adjacency matrix of shape [N, N].
+    x : torch.Tensor
+        Node feature matrix of shape [N, D].
+    y : torch.Tensor
+        Target labels of shape [N].
+    edge_index : torch.Tensor
+        Graph edges, shape [2, E].
+    mask : bool
+        Whether to activate the channel masking mechanism.
+    idx_train : torch.Tensor
+        Training node indices.
+    adv_steps : int
+        Number of discriminator updates per epoch.
+    alpha, beta, gamma : float
+        Hyperparameter weights for Independence, Demographic, and Fairness losses.
+    lambda_ : float
+        Current GRL scaling factor.
+
+    Returns
+    -------
+    tuple[float, ...]
+        A tuple containing (total_loss, lp, ld, li, lf, adv_loss).
+    """
     model.train()
     model.vgae.eval()
-    ld_wu = -0
+    ld_wu = -0.0
+    # Update Discriminator Independently
     for _ in range(adv_steps):
-        optimizer.zero_grad()
         ld_wu = train_discriminator(
-            model, adj, x, edge_index, idx_train
+            model, disc_optimizer, adj, x, edge_index, idx_train
         )
-        optimizer.step()
 
-    # Forward pass: s_pred comes from the internal frozen VGAE
+    # 1. Forward pass: s_pred comes from the internal frozen VGAE
     optimizer.zero_grad()
     y_logits, h, c_logits, s_pred = model(adj, x, edge_index, lambda_, mask)
 
-    # Losses - Stage 2 uses s_pred as a proxy for true demographics
+    # 2. Losses - Stage 2 uses s_pred as a proxy for true demographics
     lp = prediction_loss(y_logits[idx_train], y[idx_train])
     ld = demographic_loss(c_logits[:, idx_train, :], s_pred[idx_train])
     lf = fairness_loss(y_logits[idx_train], s_pred[idx_train])
     li = independence_loss(h[idx_train])
 
     total_loss = lp + alpha * li + beta * ld + gamma * lf
+
+    # 3. Backward pass
     total_loss.backward()
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
     optimizer.step()
@@ -57,7 +146,40 @@ def train_step(model, optimizer, adj, x, y, edge_index, mask, idx_train, adv_ste
     return total_loss.item(), lp.item(), ld.item(), li.item(), lf.item(), ld_wu
 
 
-def evaluate(model, adj, x, y, edge_index, idx, s_true=None):
+def evaluate(
+    model: torch.nn.Module,
+    adj: torch.Tensor,
+    x: torch.Tensor,
+    y: torch.Tensor,
+    edge_index: torch.Tensor,
+    idx: torch.Tensor,
+    s_true: torch.Tensor | None = None
+) -> dict[str, float]:
+    """
+    Evaluates the model on a specific data split.
+
+    Parameters
+    ----------
+    model : FairGNNWOD
+        The entire model.
+    adj : torch.Tensor
+        Adjacency matrix of shape [N, N].
+    x : torch.Tensor
+        Node feature matrix of shape [N, D].
+    y : torch.Tensor
+        Target labels of shape [N].
+    edge_index : torch.Tensor
+        Graph edges, shape [2, E].
+    idx : torch.Tensor
+        Index of validation nodes, typically `val_index`.
+    s_true : torch.Tensor
+        Ground truth sensitive attributes of shape [N].
+
+    Returns
+    -------
+    dict[str, float]
+        Dictionary of metrics including 'acc', 'f1', 'auc', and fairness scores if s_true is provided.
+    """
     model.eval()
     # Note: FairGNNWOD forward returns (y_logits, h, c_logits, s_probs)
     y_logits, _, _, _ = model(adj, x, edge_index, 0.0, True)
@@ -76,7 +198,7 @@ def evaluate(model, adj, x, y, edge_index, idx, s_true=None):
     except ValueError:
         auc = 0.5
 
-    metrics = {"acc": acc, "f1": f1, "auc": auc}
+    metrics: dict[str, Any] = {"acc": acc, "f1": f1, "auc": auc}
 
     # Only compute fairness if s_true is provided
     # !!!If you do provide true sensitive attributes, DO NOT use this as a train/val metric
@@ -87,7 +209,24 @@ def evaluate(model, adj, x, y, edge_index, idx, s_true=None):
     return metrics
 
 
-def train_stage2(data, args):
+def train_stage2(data: object, args: Any) -> None:
+    """
+    Orchestrates the full Stage 2 training cycle.
+
+    This function handles:
+    1. Data preparation and normalization.
+    2. Model and optimizer initialization.
+    3. Management of LossSchedulers for losses.
+    4. The main training loop with periodic validation and early stopping.
+    5. Saving the best model weights.
+
+    Parameters
+    ----------
+    data : GraphDataset
+        The dataset to use.
+    args : argparse.args
+        Training arguments.
+    """
     # Set seeds
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -132,9 +271,14 @@ def train_stage2(data, args):
         num_channels=args.channels
     ).to(device)
 
+    # Whole model optimizer
     optimizer = torch.optim.Adam(model.parameters(),
                                  lr=args.lr,
                                  weight_decay=args.weight_decay)
+    # Discriminator optimizer for independent adversarial training steps
+    disc_optimizer = torch.optim.Adam(model.demographic_classifier.parameters(),
+                                      lr=args.lr,
+                                      weight_decay=args.weight_decay)
 
     model_save_basename = f"{MODEL_DIR}/stage2/fairgnnwod_{args.dataset}"
     best_model_path = f'{model_save_basename}_best.pt'
@@ -183,7 +327,7 @@ def train_stage2(data, args):
             mask = epoch > args.mask_warmup * args.warmup
 
             loss, lp, ld, li, lf, adv_loss = train_step(
-                model, optimizer, adj, x, y, edge_index, mask,
+                model, optimizer, disc_optimizer, adj, x, y, edge_index, mask,
                 idx_train, args.adv_steps_per_epoch, alpha, beta, gamma, lambda_dd
             )
 

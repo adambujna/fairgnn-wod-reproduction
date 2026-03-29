@@ -3,7 +3,7 @@
 import argparse
 import torch
 
-from src.dataset.dataset import GraphDataset
+from src.dataset.dataset import GraphDataset, VALID_SETS
 from src.training.train_gcn import train_gcn
 from src.training.train_stage1 import train_vgae
 from src.training.train_stage2 import train_stage2
@@ -16,7 +16,7 @@ def main():
                         choices=['gcn', 'vgae', 'fairgnnwod', 'fairkd'])
     parser.add_argument('--task', type=str, default='train', choices=['train', 'predict'])
     parser.add_argument('--dataset', type=str, default='credit',
-                        choices=['dblp', 'pokec_z', 'pokec_n', 'credit'])
+                        choices=VALID_SETS)
     parser.add_argument('--dgl_data', action='store_true')     # Choose whether to use dgl data
     parser.add_argument('--device', type=str, default='cuda' if torch.cuda.is_available() else 'cpu')
     parser.add_argument('--seed', type=int, default=0)

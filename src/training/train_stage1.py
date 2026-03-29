@@ -1,9 +1,12 @@
 #!/usr/bin/env/python
 
 import time
+
 import numpy as np
 import torch
 import torch.nn.functional as F
+
+from typing import Any
 
 from src.utils.utils import negative_sampling, remove_self_loops
 from src.utils.losses import structure_reconstruction_loss, kl_divergence, negative_entropy
@@ -14,8 +17,68 @@ from src.models.vgae.DemographicVGAE import DemographicVGAE
 from src.paths import MODEL_DIR
 
 
-def train_step(vgae, hgr_net, opt_vgae, opt_hgr, adj, x, y, s_true,
-               pos_index, neg_index, train_idx, lmbda, beta, hgr_steps):
+def train_step(
+    vgae: torch.nn.Module,
+    hgr_net: torch.nn.Module,
+    opt_vgae: torch.optim.Optimizer,
+    opt_hgr: torch.optim.Optimizer,
+    adj: torch.Tensor,
+    x: torch.Tensor,
+    y: torch.Tensor,
+    s_true: torch.Tensor,
+    pos_index: torch.Tensor,
+    neg_index: torch.Tensor,
+    train_idx: torch.Tensor,
+    lmbda: float,
+    beta: float,
+    hgr_steps: int
+) -> tuple[float, float, float, float, float, float, float]:
+    """
+    Perform a single training step using Min-Max optimization between VGAE and HGR.
+
+    The process involves two phases:
+    1. **Max Phase**: Update the HGR network to maximize the correlation estimate
+       between the latent representation $Z$ and the target labels $Y$.
+    2. **Min Phase**: Update the VGAE to reconstruct the graph and infer sensitive
+       attributes $S$, while simultaneously minimizing the correlation estimate
+       found by the HGR network.
+
+    Parameters
+    ----------
+    vgae : nn.Module
+        The Demographic VGAE model.
+    hgr_net : nn.Module
+        The HGR Estimator network.
+    opt_vgae : torch.optim.Optimizer
+        Optimizer for VGAE parameters.
+    opt_hgr : torch.optim.Optimizer
+        Optimizer for HGR Estimator parameters.
+    adj : torch.Tensor
+        Adjacency matrix of shape [N, N].
+    x : torch.Tensor
+        Node feature matrix of shape [N, D].
+    y : torch.Tensor
+        Target labels of shape [N].
+    s_true : torch.Tensor
+        Ground truth sensitive attributes of shape [N].
+    pos_index : torch.Tensor
+        Positive edge indices [2, E_pos].
+    neg_index : torch.Tensor
+        Sampled negative edge indices [2, E_neg].
+    train_idx : torch.Tensor
+        Mask/Indices for the training set.
+    lmbda : float
+        Current weight for the HGR fairness penalty.
+    beta : float
+        Current weight for the KL divergence (annealing).
+    hgr_steps : int
+        Number of HGR estimator updates per VGAE update.
+
+    Returns
+    -------
+    tuple[float, float, float, float, float, float, float]
+        A tuple containing: (total_loss, hgr_val, recon_x, recon_a, kl_div, neg_entropy, recon_s).
+    """
     # --- Max Phase: Train HGR ---
     for _ in range(hgr_steps):
         vgae.eval()
@@ -47,7 +110,7 @@ def train_step(vgae, hgr_net, opt_vgae, opt_hgr, adj, x, y, s_true,
     s_probs = F.softmax(s_logits, dim=1)
     neg_ent = negative_entropy(s_probs[train_idx])
 
-    # Regularization
+    # Latent Space Regularization
     # KL Divergence log(P(Z)) - log(q(Z | X, A))
     kl_div = kl_divergence(mu, logvar)
 
@@ -66,7 +129,50 @@ def train_step(vgae, hgr_net, opt_vgae, opt_hgr, adj, x, y, s_true,
 
 
 @torch.no_grad()
-def evaluate(vgae, hgr_net, adj, x, y, s_true, pos_index, neg_index, beta, lmbda, val_idx):
+def evaluate(
+    vgae: torch.nn.Module,
+    hgr_net: torch.nn.Module,
+    adj: torch.Tensor,
+    x: torch.Tensor,
+    y: torch.Tensor,
+    s_true: torch.Tensor,
+    pos_index: torch.Tensor,
+    neg_index: torch.Tensor,
+    beta: float,
+    lmbda: float,
+    val_idx: torch.Tensor
+) -> tuple[torch.Tensor, ...]:
+    """
+    Evaluate Stage 1 model performance on the validation set.
+
+    Parameters
+    ----------
+    vgae, hgr_net : nn.Module
+        The models to evaluate.
+    adj : torch.Tensor
+        Adjacency matrix of shape [N, N].
+    x : torch.Tensor
+        Node feature matrix of shape [N, D].
+    y : torch.Tensor
+        Target labels of shape [N].
+    s_true : torch.Tensor
+        Ground truth sensitive attributes of shape [N].
+    pos_index : torch.Tensor
+        Positive edge indices [2, E_pos].
+    neg_index : torch.Tensor
+        Sampled negative edge indices [2, E_neg].
+    beta : float
+        Current loss weights for KL.
+    lmbda : float
+        Current loss weights for HGR.
+    val_idx : torch.Tensor
+        Mask/Indices for the validation set.
+
+    Returns
+    -------
+    tuple[float, float, float, float, float, float, float]
+        Validation counterparts to the training metrics.
+    """
     vgae.eval()
     hgr_net.eval()
 
@@ -89,7 +195,24 @@ def evaluate(vgae, hgr_net, adj, x, y, s_true, pos_index, neg_index, beta, lmbda
     return total_val_loss, val_recon_x, val_recon_a, val_kl, val_recon_s, val_neg_ent, val_hgr
 
 
-def train_vgae(data, args):
+def train_vgae(data: object, args: Any) -> None:
+    """
+    Orchestrate the Stage 1 training process.
+
+    This function handles:
+    1. Data preparation and normalization.
+    2. Model and optimizer initialization.
+    3. Management of LossSchedulers for KL annealing and HGR weight ramping.
+    4. The main training loop with periodic validation and early stopping.
+    5. Saving the best VGAE weights and the corresponding HGR estimator.
+
+    Parameters
+    ----------
+    data : GraphDataset
+        The dataset to use.
+    args : argparse.args
+        Training arguments.
+    """
     # Set seeds
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
