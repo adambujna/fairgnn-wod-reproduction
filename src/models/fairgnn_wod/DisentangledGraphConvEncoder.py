@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# Implementation of a Disentangled Graph Convolution and the multichannel Disentangled Graph Encoder
 
 import torch
 import torch.nn as nn
@@ -7,11 +6,36 @@ from torch_geometric.nn import MessagePassing
 
 
 class DisentangledGraphConv(MessagePassing):
-    def __init__(self, in_size, out_size, num_channels, weight=True, bias=False, activation=None):
-        """
-        Disentangled graph convolution layer, which works exactly like a Graph Convolution
-        but maintains N_c separate channels.
-        """
+    """
+    A Disentangled Graph Convolutional layer.
+
+    Unlike a standard GCN that aggregates all features uniformly, this layer maintains $C$ separate latent channels.
+    It performs independent message passing for each channel $c$ using the channel-specific attention weights
+    $\omega_c$, followed by a channel-specific linear transformation.
+
+    The forward pass operation per channel is roughly:
+    $\mathbf{h}_{i, c}^{(l+1)} = \sigma \left( \sum_{j \in \mathcal{N}(i)} \omega_{ij, c} \mathbf{h}_{j, c}^{(l)} \mathbf{W}_c^{(l)} + \mathbf{b}_c \right)$
+
+    Parameters
+    ----------
+    in_size : int
+        Dimension of the input features ($D$ for the first layer, $H$ otherwise).
+    out_size : int
+        Dimension of the output features per channel ($H$).
+    num_channels : int
+        Number of disentangled channels ($C$).
+    weight : bool, optional
+        If True, applies a channel-specific weight matrix.
+        Defaults to True.
+    bias : bool, optional
+        If True, applies a channel-specific bias vector.
+        Defaults to False.
+    activation : callable, optional
+        Activation function to apply after the transformation.
+        Defaults to None.
+    """
+    def __init__(self, in_size: int, out_size: int, num_channels: int,
+                 weight: bool = True, bias: bool = False, activation: object = None):
         super(DisentangledGraphConv, self).__init__()
         self._activation = activation
         self.in_size = in_size
@@ -35,20 +59,54 @@ class DisentangledGraphConv(MessagePassing):
         self.reset_parameters()
 
     def reset_parameters(self):
+        """Standard initialization of weight and bias."""
         nn.init.xavier_uniform_(self.proj)
         if self.weight is not None:
             nn.init.xavier_uniform_(self.weight)
         if self.bias is not None:
             nn.init.zeros_(self.bias)
 
-    def message(self, x_j, edge_weight):
-        # x_j: [E, H] features of source nodes
-        # edge_weight: [E] per-edge weight
+    def message(self, x_j: torch.Tensor, edge_weight: torch.Tensor) -> torch.Tensor:
+        """
+        Constructs messages for a specific channel.
+
+        Parameters
+        ----------
+        x_j : torch.Tensor
+            Features of the source nodes for the current channel, shape [E, H].
+        edge_weight : torch.Tensor
+            The adaptive assignment weights $\omega_c$ for the current channel, shape [E].
+
+        Returns
+        -------
+        torch.Tensor
+            Weighted messages of shape [E, H].
+        """
         return edge_weight.view(-1, 1) * x_j
 
-    def forward(self, x, edge_index, omega):
+    def forward(self, x: torch.Tensor, edge_index: torch.Tensor, omega: torch.Tensor) -> torch.Tensor:
+        """
+        Executes the channel-wise graph convolution.
+
+        If the input is 2D (initial layer), it uses `self.proj` to map the
+        input features into the 3D channel space $[N, C, H]$.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input node features.
+            Shape [N, D] for the first layer, or [N, C, in_size] for subsequent layers.
+        edge_index : torch.Tensor
+            Graph connectivity, shape [2, E].
+        omega : torch.Tensor
+            Adaptive assignment weights for all channels, shape [E, C].
+
+        Returns
+        -------
+        torch.Tensor
+            Updated disentangled embeddings of shape [N, C, out_size].
+        """
         num_nodes = x.size(0)
-        src, dst = edge_index
 
         # Initial channel-wise transform
         # The first layer of X.shape [N, D], needs to separate features into channels [N, C, H]
@@ -87,7 +145,26 @@ class DisentangledGraphConv(MessagePassing):
 
 
 class DisentangledGraphConvEncoder(nn.Module):
-    def __init__(self, in_size, out_size, num_channels, num_layers=2):
+    """
+    A multi-layer encoder for disentangled graph representations.
+
+    This module stacks multiple `DisentangledGraphConv` layers.
+    The first layer handles the projection from standard node features into the
+    channelized latent space $[N, C, H]$, while subsequent layers transform those channel embeddings.
+
+    Parameters
+    ----------
+    in_size : int
+        Dimension of the raw input node features.
+    out_size : int
+        Hidden dimension size per channel ($H$).
+    num_channels : int
+        Number of disentangled channels ($C$).
+    num_layers : int, optional
+        Total number of convolutional layers.
+        Defaults to 2.
+    """
+    def __init__(self, in_size: int, out_size: int, num_channels: int, num_layers: int = 2):
         super(DisentangledGraphConvEncoder, self).__init__()
         self.num_channels = num_channels
 
@@ -105,7 +182,27 @@ class DisentangledGraphConvEncoder(nn.Module):
         self.layer_norm = nn.LayerNorm(out_size)
         self.ReLU = nn.ReLU()
 
-    def forward(self, x, edge_index, omega):
+    def forward(self, x: torch.Tensor, edge_index: torch.Tensor, omega: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass through the stacked disentangled convolutions.
+
+        Applies Layer Normalization and ReLU activations between the
+        convolutional steps to stabilize the channel representations.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Raw input node features, shape [N, in_size].
+        edge_index : torch.Tensor
+            Graph connectivity [2, E].
+        omega : torch.Tensor
+            Adaptive assignment weights, shape [E, C].
+
+        Returns
+        -------
+        torch.Tensor
+            Final disentangled latent representations, shape [N, C, H].
+        """
         h = x
 
         for i, layer in enumerate(self.layers):

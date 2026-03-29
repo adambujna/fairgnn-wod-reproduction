@@ -6,6 +6,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
+from typing import Any
+
 from src.utils.metrics import f1_score, accuracy, fairness_metrics, auc_score
 from src.utils.utils import format_metric
 from src.utils.EarlyStoppingCriterion import EarlyStoppingCriterion
@@ -13,18 +15,59 @@ from src.models.fairkd.FairKD import FairKD
 from src.paths import MODEL_DIR
 
 
-def train_step(model, optimizer, adj, x, y, idx_train):
+def train_step(
+    model: FairKD,
+    optimizer: torch.optim.Optimizer,
+    adj: torch.Tensor,
+    x: torch.Tensor,
+    y: torch.Tensor,
+    idx_train: torch.Tensor
+) -> float:
+    """
+    Perform a single training iteration for the Student model using Knowledge Distillation.
+
+    The student is trained to minimize a weighted combination of:
+    1. **Task Loss**: Standard Cross-Entropy against the ground truth labels.
+    2. **KD Loss**: Divergence between the Student's soft predictions and the
+       pre-trained Teacher's soft predictions.
+
+    Parameters
+    ----------
+    model : FairKD
+        The distillation wrapper containing both the Teacher (frozen) and Student.
+    optimizer : torch.optim.Optimizer
+        Optimizer for the Student model parameters.
+    adj : torch.Tensor
+        Adjacency matrix [N, N].
+    x : torch.Tensor
+        Node feature matrix [N, D].
+    y : torch.Tensor
+        Target labels [N].
+    idx_train : torch.Tensor
+        Indices for the training set.
+
+    Returns
+    -------
+    float
+        The total combined loss value for the step.
+    """
     model.train()
     optimizer.zero_grad()
 
+    # Student pass
     student_logits = model(adj, x, mode="student")
+
+    # Teacher pass
     with torch.no_grad():
         teacher_logits = model(adj, x, mode="teacher")
 
+    # Compute loss components
     loss_task = F.cross_entropy(student_logits[idx_train], y[idx_train])
     loss_kd = model.kd_loss(student_logits[idx_train], teacher_logits[idx_train])
 
+    # Final weighted loss: (1-lambda)*Task + lambda*KD
     loss = (1 - model.lambda_kd) * loss_task + model.lambda_kd * loss_kd
+    # Backward pass
     loss.backward()
     optimizer.step()
 
@@ -32,7 +75,37 @@ def train_step(model, optimizer, adj, x, y, idx_train):
 
 
 @torch.no_grad()
-def evaluate(model, adj, x, y, idx, sensitive=None):
+def evaluate(
+    model: torch.nn.Module,
+    adj: torch.Tensor,
+    x: torch.Tensor,
+    y: torch.Tensor,
+    idx: torch.Tensor,
+    sensitive: torch.Tensor | None = None
+) -> dict[str, float]:
+    """
+    Evaluate the Student model's performance and fairness metrics.
+
+    Parameters
+    ----------
+    model : FairKD
+        The model to evaluate.
+    adj : torch.Tensor
+        Adjacency matrix [N, N].
+    x : torch.Tensor
+        Node feature matrix [N, D].
+    y : torch.Tensor
+        Target labels [N].
+    idx : torch.Tensor
+        Indices for the evaluation split (val or test).
+    sensitive : torch.Tensor, optional
+        Ground truth sensitive attributes for calculating fairness metrics.
+
+    Returns
+    -------
+    dict[str, float]
+        Dictionary containing 'loss', 'acc', 'f1', 'auc', and fairness scores.
+    """
     model.eval()
     output = model(adj, x)
 
@@ -51,7 +124,7 @@ def evaluate(model, adj, x, y, idx, sensitive=None):
     except ValueError:
         auc = 0.5
 
-    metrics = {"loss": loss, "acc": acc, "f1": f1, "auc": auc}
+    metrics: dict[str, Any] = {"loss": loss, "acc": acc, "f1": f1, "auc": auc}
 
     # Calculate fairness if sensitive attribute is provided
     if sensitive is not None:
@@ -61,7 +134,24 @@ def evaluate(model, adj, x, y, idx, sensitive=None):
     return metrics
 
 
-def train_fairkd(data, args):
+def train_fairkd(data: Any, args: Any) -> None:
+    """
+    Orchestrate the Knowledge Distillation training process.
+
+    This function:
+    1. Prepares features (with conditional normalization for the Credit dataset).
+    2. Loads a pre-trained Teacher model (usually a standard GCN).
+    3. Freezes the Teacher to ensure only the Student learns.
+    4. Executes the training loop with Early Stopping based on Validation F1.
+    5. Performs final testing on the best-saved checkpoint.
+
+    Parameters
+    ----------
+    data : GraphDataset
+        Data object containing graph structure and features.
+    args : argparse.args
+        Configuration object containing hyperparameters (lr, kd_lambda, etc.).
+    """
     # Set seeds
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)

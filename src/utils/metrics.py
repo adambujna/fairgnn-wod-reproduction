@@ -1,47 +1,53 @@
 #!/usr/bin/env python
+
 import torch
 
 
-def accuracy(y_true, y_pred, index):
+def accuracy(y_true: torch.Tensor, y_pred: torch.Tensor, index: torch.Tensor) -> float:
     """
-    Accuracy of model predictions.
+    Computes the standard accuracy score for a subset of nodes.
 
     Parameters
     ----------
-    y_true: torch.Tensor
-        true labels
-    y_pred: torch.Tensor
-        model predictions for all nodes
-    index: torch.Tensor
-        indices of nodes to evaluate (e.g., test set indexes)
+    y_true : torch.Tensor
+        Ground truth labels for all nodes.
+    y_pred : torch.Tensor
+        Model predictions (hard labels) for all nodes.
+    index : torch.Tensor
+        Mask or index array selecting the nodes to evaluate (e.g., test set).
 
     Returns
     -------
-    accuracy: float
-        accuracy
+    float
+        The fraction of correctly classified samples.
+        Returns 0.0 if index is empty.
     """
     if len(y_true[index]) == 0:
         return 0.0
     return torch.mean((y_true[index] == y_pred[index]).float()).item()
 
 
-def precision(y_true, y_pred, index):
+def precision(y_true: torch.Tensor, y_pred: torch.Tensor, index: torch.Tensor) -> float:
     """
-    Precision of model predictions averaged per class or of positive class in case of binary classification.
+    Computes precision, averaged per-class (Macro) or for the positive class.
+
+    For binary classification, returns the precision of the highest label index.
+    For multi-class, returns the macro-averaged precision across all classes.
 
     Parameters
     ----------
-    y_true: torch.Tensor
-        true labels
-    y_pred: torch.Tensor
-        model predictions for all nodes
-    index: torch.Tensor
-        indices of nodes to evaluate (e.g., test set indexes)
+    y_true : torch.Tensor
+        Ground truth labels.
+    y_pred : torch.Tensor
+        Hard model predictions.
+    index : torch.Tensor
+        Evaluation indices.
 
     Returns
     -------
-    precision: float
-        precision
+    float
+        Precision value in range [0, 1].
+        Returns 0.0 if index is empty.
     """
     if len(y_true[index]) == 0:
         return 0.0
@@ -67,23 +73,23 @@ def precision(y_true, y_pred, index):
     return torch.mean(torch.Tensor(prec)).item()
 
 
-def recall(y_true, y_pred, index):
+def recall(y_true: torch.Tensor, y_pred: torch.Tensor, index: torch.Tensor) -> float:
     """
-    Recall of model predictions averaged per class or of positive class in case of binary classification.
+    Computes recall, averaged per-class (Macro) or for the positive class.
 
     Parameters
     ----------
-    y_true: torch.Tensor
-        true labels
-    y_pred: torch.Tensor
-        model predictions for all nodes
-    index: torch.Tensor
-        indices of nodes to evaluate (e.g., test set indexes)
+    y_true : torch.Tensor
+        Ground truth labels.
+    y_pred : torch.Tensor
+        Hard model predictions.
+    index : torch.Tensor
+        Evaluation indices.
 
     Returns
     -------
-    recall: float
-        recall
+    float
+        Recall (True Positive Rate) in range [0, 1].
     """
     if len(y_true[index]) == 0:
         return 0.0
@@ -109,23 +115,26 @@ def recall(y_true, y_pred, index):
     return torch.mean(torch.Tensor(rec)).item()
 
 
-def f1_score(y_true, y_pred, index):
+def f1_score(y_true: torch.Tensor, y_pred: torch.Tensor, index: torch.Tensor) -> float:
     """
-    F1-score of model predictions averaged per class or of positive class in case of binary classification.
+    Computes the F1-score.
+
+    Follows the same averaging logic as precision and recall
+    (Macro-averaging for multi-class, positive-class only for binary).
 
     Parameters
     ----------
-    y_true: torch.Tensor
-        true labels
-    y_pred: torch.Tensor
-        model predictions for all nodes
-    index: torch.Tensor
-        indices of nodes to evaluate (e.g., test set indexes)
+    y_true : torch.Tensor
+        Ground truth labels.
+    y_pred : torch.Tensor
+        Hard model predictions.
+    index : torch.Tensor
+        Evaluation indices.
 
     Returns
     -------
-    f1: float
-        f1-score
+    float
+        F1-score in range [0, 1].
     """
     if len(y_true[index]) == 0:
         return 0.0
@@ -155,27 +164,33 @@ def f1_score(y_true, y_pred, index):
     return torch.mean(torch.Tensor(F1)).item()
 
 
-def fairness_metrics(y_pred, y_true, sensitive, index):
+def fairness_metrics(y_pred: torch.Tensor, y_true: torch.Tensor,
+                     sensitive: torch.Tensor,
+                     index: torch.Tensor) -> tuple[list[float], list[float]]:
     """
-    Calculates Statistical Parity (SP) and Equal Opportunity (EO) for each class. These are fairness metrics.
+    Calculates group fairness gaps: Statistical Parity and Equal Opportunity.
+
+    The gaps are calculated as the difference between the advantaged group (1)
+    and the disadvantaged group (0).
+    A value of 0.0 indicates perfect parity.
 
     Parameters
     ----------
-    y_true: torch.Tensor
-        true labels
-    y_pred: torch.Tensor
-        model predictions for all nodes
-    sensitive: torch.Tensor[1 | 0]
-        specifying whether node is part of advantaged or disadvantaged group (1 or 0)
-    index: torch.Tensor
-        indices of nodes to evaluate (e.g., test set indexes)
+    y_pred : torch.Tensor
+        Hard model predictions.
+    y_true : torch.Tensor
+        Ground truth labels.
+    sensitive : torch.Tensor
+        Binary sensitive attribute (1 = Advantaged, 0 = Disadvantaged).
+    index : torch.Tensor
+        Evaluation indices.
 
     Returns
     -------
-    SP, EO: Tuple[list[float], list[float]]
-        SP: list of Statistical Parity values, one per class
-
-        EO: list of Equal Opportunity values, one per class
+    SP : list of float
+        Statistical Parity Difference per class: $P(\hat{y}=i | s=1) - P(\hat{y}=i | s=0)$.
+    EO : list of float
+        Equal Opportunity Difference per class: $P(\hat{y}=i | y=i, s=1) - P(\hat{y}=i | y=i, s=0)$.
     """
     SP = []
     EO = []
@@ -210,7 +225,27 @@ def fairness_metrics(y_pred, y_true, sensitive, index):
     return SP, EO
 
 
-def auc_score(y_true, y_prob):
+def auc_score(y_true: torch.Tensor, y_prob: torch.Tensor) -> float:
+    """
+    Computes Area Under the ROC Curve (AUC) for binary classification.
+
+    This implementation uses the Wilcoxon-Mann-Whitney U-statistic approach,
+    calculating the probability that a randomly chosen positive instance
+    is ranked higher than a randomly chosen negative one.
+
+    Parameters
+    ----------
+    y_true : torch.Tensor
+        Binary ground truth labels.
+    y_prob : torch.Tensor
+        Predicted probabilities for the positive class.
+
+    Returns
+    -------
+    float
+        AUC score.
+        Returns 0.5 if only one class is present in y_true.
+    """
     y_true = y_true.view(-1)
     y_prob = y_prob.view(-1)
 
